@@ -4,4 +4,4 @@
 // safe to leave here even though this repo is public.
 // Leave empty to skip the isochrone layer entirely -- the rest of the map
 // works fine without it.
-window.ORS_API_KEY = "";
+window.ORS_API_KEY = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImUyOWU4NDljMDljOTRlZTM5YjMyNmVjZjc2ZDY1YjlmIiwiaCI6Im11cm11cjY0In0=";
