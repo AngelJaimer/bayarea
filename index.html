@@ -256,6 +256,7 @@ body { margin: 0; }
   max-width: 40ch; margin-left: auto; margin-right: auto;
 }
 .leaflet-container { background: ${C.water}; font-family: 'Archivo', sans-serif; }
+.leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.94) contrast(.85) saturate(.6); }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
   background: ${C.panel}; color: ${C.bone}; border: 1px solid ${C.grid};
   box-shadow: none; border-radius: 2px;
@@ -385,9 +386,11 @@ table.cmp tr:hover td { background: ${C.panel}; }
 
 const WAYMO = { lat: 37.4005, lng: -122.0495, label: "Waymo HQ" };
 
-// Dark raster basemap, no API key required.
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png";
-const TILE_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+// Standard OSM tiles: free, keyless, no rate-limit surprises (unlike CARTO's raster
+// endpoint, which now requires an API key). Recolored dark via CSS filter on the
+// tile pane only -- markers/popups live in separate Leaflet panes and are untouched.
+const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+const TILE_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const ISO_MINUTES = [40, 30, 20, 10]; // rendered largest-first so smaller rings sit on top
 
 const money = (n) => "$" + n.toLocaleString();
@@ -468,7 +471,7 @@ function PeninsulaChart() {
     }
     try {
       const map = L.map(mapDiv.current, { scrollWheelZoom: true });
-      L.tileLayer(TILE_URL, { subdomains: "abcd", maxZoom: 19, attribution: TILE_ATTRIB }).addTo(map);
+      L.tileLayer(TILE_URL, { subdomains: "abc", maxZoom: 19, attribution: TILE_ATTRIB }).addTo(map);
       map.fitBounds(L.latLngBounds(PLACES.map((p) => [p.lat, p.lng])), { padding: [24, 24] });
 
       L.circleMarker([WAYMO.lat, WAYMO.lng], {
