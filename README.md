@@ -22,6 +22,20 @@ Single static page (`index.html`), no build step, deployed to GitHub Pages.
 - Click any neighborhood on the map or in the ranked list to see its full
   breakdown; click **Add to compare** to pin up to 5 side by side in a
   table at the bottom.
+- The map is a real, pannable/zoomable basemap (dark CARTO tiles, no key
+  needed). Below it, checkboxes toggle curated real-world points of
+  interest: lap swimming pools (not just any pool), Lagree/Pilates
+  studios, parks, and farmers markets — sourced from actual venues named
+  in the neighborhood notes, not a generic open-data query.
+
+## Real drive-time shading (optional)
+
+With a free [OpenRouteService](https://openrouteservice.org/dev/#/signup)
+API key pasted into `config.js`, the map shades real road-network
+drive-time from Waymo HQ (10/20/30/40 min rings) instead of nothing. In
+the ORS dashboard, restrict the key to your `github.io` origin so it's
+safe to leave in this public repo. Leave `config.js` empty and the rest
+of the map works fine without it.
 
 ## Access
 
@@ -42,3 +56,9 @@ All neighborhood scores, weights, and criteria live in the `CRITERIA` and
 `PLACES` arrays near the top of the `<script type="text/babel-source">`
 block in `index.html`. Edit the numbers there and push — no rebuild
 needed.
+
+The curated points of interest (pools, studios, parks, markets) live in
+the `POIS` array right after `PLACES`. Add an entry with a `type`
+(`pool` / `lagree` / `park` / `market`), `name`, `lat`/`lng`, and a short
+`note` to add a pin; new categories need a matching entry in `POI_META`
+for their label and dot color.

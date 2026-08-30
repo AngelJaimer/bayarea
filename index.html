@@ -37,6 +37,7 @@
   #root { display: none; }
   #root.visible { display: block; }
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 </head>
 <body>
 
@@ -55,6 +56,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="config.js"></script>
 
 <script>
 (async function () {
@@ -102,11 +105,38 @@
 </script>
 
 <script type="text/babel-source" id="app-source">
-const { useState, useMemo, useRef } = React;
+const { useState, useMemo, useRef, useEffect } = React;
 
 const CRITERIA = [{"k":"Waymo commute","w":0.2,"l":"short commute"},{"k":"Walkability","w":0.2,"l":"walkability"},{"k":"Bakeries / food","w":0.15,"l":"food and cafes"},{"k":"Farmers market","w":0.1,"l":"farmers market"},{"k":"Baby / family","w":0.2,"l":"family life"},{"k":"House <= $7.5k","w":0.15,"l":"housing budget"},{"k":"Running","w":0.08,"l":"running"},{"k":"Biking","w":0.08,"l":"cycling"},{"k":"Swimming pool access","w":0.07,"l":"lap swimming"},{"k":"Triathlon / endurance","w":0.05,"l":"triathlon scene"},{"k":"Lagree Pilates","w":0.09,"l":"Lagree"},{"k":"Beach access","w":0.08,"l":"beach trips"}];
 
 const PLACES = [{"c":"Mountain View","n":"Old Mountain View (Castro St)","lat":37.392,"lng":-122.081,"s":[5,5,5,5,4,3.5,4.5,5,4,4.5,5,3],"rl":6500,"rh":9000,"wm":2.5,"wd":"7-11 min","b":"Half Moon Bay / Santa Cruz","bd":"45-50 min","note":"Most walkable spot on the whole list. Castro St bakeries, Sunday farmers market and Transform Lagree all on foot. Small lots, tight rental supply."},{"c":"Mountain View","n":"Cuesta Park","lat":37.38,"lng":-122.083,"s":[5,4,4,4.5,5,4,5,5,4.5,4.5,4.5,3],"rl":6000,"rh":8500,"wm":3,"wd":"9-13 min","b":"Half Moon Bay / Santa Cruz","bd":"45-50 min","note":"The family-first Mountain View pick. Big park, quiet streets, Stevens Creek Trail close, still 10 min to Waymo."},{"c":"Mountain View","n":"Shoreline West","lat":37.402,"lng":-122.088,"s":[5,4.5,4.5,4.5,4.5,4.5,5,5,4,4.5,4.5,3],"rl":6000,"rh":8500,"wm":3,"wd":"8-12 min","b":"Half Moon Bay / Santa Cruz","bd":"45-50 min","note":"Best all-round balance: near-zero commute, walkable to Castro, direct to Shoreline trails."},{"c":"Mountain View","n":"North Whisman","lat":37.398,"lng":-122.052,"s":[5,3,3.5,3.5,4,5,5,4.5,3.5,4,3.5,3],"rl":5500,"rh":7000,"wm":0.5,"wd":"3-5 min","b":"Half Moon Bay / Santa Cruz","bd":"45-55 min","note":"Cheapest housing this close to Waymo. Stevens Creek Trail from the door, but you drive for everything else."},{"c":"Mountain View","n":"Rex Manor","lat":37.399,"lng":-122.073,"s":[5,4,4,4,4.5,4.5,4.5,4.5,4,4,4,3],"rl":6000,"rh":8500,"wm":1.5,"wd":"5-8 min","b":"Half Moon Bay / Santa Cruz","bd":"45-50 min","note":"Quiet middle ground between Castro St and North Whisman. Good value."},{"c":"Mountain View","n":"Monta Loma","lat":37.407,"lng":-122.087,"s":[5,3.5,3.5,3.5,4.5,5,4.5,4.5,3.5,4,3.5,3],"rl":5500,"rh":7000,"wm":3,"wd":"8-12 min","b":"Half Moon Bay / Santa Cruz","bd":"45-50 min","note":"Flat, affordable, mid-century tract housing. Light on walkable amenities."},{"c":"Mountain View","n":"Waverly Park","lat":37.372,"lng":-122.07,"s":[4.5,3,3.5,3.5,5,3.5,4.5,5,4,4,4,3],"rl":7000,"rh":9500,"wm":3.5,"wd":"10-15 min","b":"Santa Cruz via 17","bd":"45-50 min","note":"Leafiest Mountain View neighborhood, edges toward Los Altos in feel and price."},{"c":"Mountain View","n":"Sylvan Park","lat":37.393,"lng":-122.062,"s":[5,3.5,3.5,3.5,4.5,4.5,4.5,4.5,4,4,3.5,3],"rl":6000,"rh":8500,"wm":1,"wd":"4-6 min","b":"Half Moon Bay / Santa Cruz","bd":"45-55 min","note":"Quiet residential pocket, close to Whisman Caltrain and light rail."},{"c":"Palo Alto","n":"Downtown North","lat":37.448,"lng":-122.157,"s":[4,5,5,5,4,2.5,4.5,5,5,5,5,3.5],"rl":8500,"rh":12000,"wm":9,"wd":"18-25 min","b":"San Gregorio via 84","bd":"40-45 min","note":"Rinconada lap pool, University Ave, Saturday market. Very expensive and less baby-oriented."},{"c":"Palo Alto","n":"Midtown","lat":37.425,"lng":-122.122,"s":[4.5,4.5,4,4,5,3.5,4.5,5,4.5,5,4.5,3.5],"rl":7500,"rh":11000,"wm":6,"wd":"14-19 min","b":"Pescadero via Page Mill / Alpine","bd":"40-45 min","note":"The practical Palo Alto choice. Family-dense, real neighbourhood shops, good pool access."},{"c":"Palo Alto","n":"Old Palo Alto","lat":37.436,"lng":-122.14,"s":[4.5,4.5,4.5,4.5,5,2,4.5,5,4.5,5,4.5,3.5],"rl":9000,"rh":14000,"wm":7.5,"wd":"16-22 min","b":"San Gregorio via 84","bd":"40-45 min","note":"Beautiful and central. Rental stock at your budget is thin."},{"c":"Palo Alto","n":"College Terrace","lat":37.424,"lng":-122.148,"s":[4.5,4.5,4,4,4.5,3,5,5,4.5,5,4.5,3.5],"rl":7500,"rh":11000,"wm":7.5,"wd":"16-22 min","b":"Pescadero via Page Mill / Alpine","bd":"38-43 min","note":"Stanford running and cycling straight from the door. Small, tightly held."},{"c":"Palo Alto","n":"Charleston Meadows / Greenmeadow","lat":37.412,"lng":-122.117,"s":[5,4,4,4,5,3.5,4.5,5,4.5,4.5,4,3.5],"rl":7500,"rh":11000,"wm":5,"wd":"12-17 min","b":"Pescadero via Page Mill","bd":"40-45 min","note":"South Palo Alto, closest to Waymo. Greenmeadow has its own community pool."},{"c":"Palo Alto","n":"Barron Park","lat":37.412,"lng":-122.132,"s":[4.5,3.5,3.5,3.5,5,3.5,4.5,5,4,4.5,4,3.5],"rl":7500,"rh":11000,"wm":7.5,"wd":"16-22 min","b":"Pescadero via Page Mill / Alpine","bd":"38-43 min","note":"Quiet, semi-rural feel, very family friendly. Fewer walkable amenities."},{"c":"Palo Alto","n":"Ventura","lat":37.421,"lng":-122.135,"s":[4.5,4,4,4,4,4,4.5,5,4,4.5,4.5,3.5],"rl":6500,"rh":9000,"wm":6.5,"wd":"15-20 min","b":"Pescadero via Page Mill","bd":"40-45 min","note":"Best value entry into Palo Alto, near California Ave and its market."},{"c":"Palo Alto","n":"Crescent Park","lat":37.452,"lng":-122.145,"s":[4,4,4.5,4.5,5,2,4.5,5,4.5,5,4.5,3],"rl":9000,"rh":14000,"wm":9.5,"wd":"19-26 min","b":"San Gregorio via 84","bd":"42-48 min","note":"Grand and quiet, north end. Longest Palo Alto commute and priciest."},{"c":"Los Altos","n":"Downtown Los Altos","lat":37.379,"lng":-122.114,"s":[5,5,5,5,5,2.5,4.5,4.5,4,4,4,3.5],"rl":8000,"rh":12000,"wm":5,"wd":"12-17 min","b":"Half Moon Bay / Pescadero","bd":"40-45 min","note":"Village feel, Thursday market, excellent bakeries. Rentals at your budget are rare."},{"c":"Los Altos","n":"North Los Altos","lat":37.388,"lng":-122.112,"s":[5,4,4.5,4.5,5,2.5,4.5,4.5,4,4,4,3.5],"rl":8000,"rh":12000,"wm":5.5,"wd":"13-18 min","b":"Half Moon Bay / Pescadero","bd":"40-45 min","note":"Walkable-ish to downtown, top schools, high price floor."},{"c":"Los Altos","n":"South Los Altos","lat":37.363,"lng":-122.1,"s":[4.5,3,3.5,3.5,5,3.5,4.5,5,4,4,3.5,3.5],"rl":8000,"rh":12000,"wm":6,"wd":"14-19 min","b":"Pescadero via Page Mill","bd":"40-45 min","note":"More attainable Los Altos, better bike access to Foothill Expwy."},{"c":"Los Altos","n":"Los Altos Hills","lat":37.363,"lng":-122.137,"s":[4,1.5,2,2.5,4,2,4.5,5,3.5,4,3,4],"rl":9000,"rh":15000,"wm":8.5,"wd":"18-26 min","b":"Pescadero via Page Mill / Alpine","bd":"33-40 min","note":"Best road cycling on the list. Zero walkability, hard with a baby and no sidewalks."},{"c":"Menlo Park","n":"Downtown / Felton Gables","lat":37.453,"lng":-122.182,"s":[4,5,4.5,4,5,3,5,5,5,5,4,3.5],"rl":7000,"rh":10000,"wm":12,"wd":"19-27 min","b":"San Gregorio via 84","bd":"35-40 min","note":"Burgess pool plus Team Sheeper triathlon programming. Strongest endurance ecosystem anywhere on this list."},{"c":"Menlo Park","n":"Allied Arts","lat":37.443,"lng":-122.183,"s":[4,4.5,4.5,4,5,3,5,5,5,5,4,3.5],"rl":7000,"rh":10000,"wm":12,"wd":"20-28 min","b":"San Gregorio via 84","bd":"35-40 min","note":"Walkable to downtown and Burgess, very family oriented, expensive."},{"c":"Menlo Park","n":"The Willows","lat":37.458,"lng":-122.163,"s":[4,4,4,4,5,4,5,5,4.5,5,4,3.5],"rl":6500,"rh":9000,"wm":11,"wd":"18-26 min","b":"San Gregorio via 84","bd":"37-42 min","note":"Best value in Menlo Park. Quiet, close to Willow Rd, easy 101 access."},{"c":"Menlo Park","n":"Suburban Park / Linfield Oaks","lat":37.463,"lng":-122.174,"s":[4,4,4,4,5,4,5,5,4.5,4.5,4,3.5],"rl":7000,"rh":10000,"wm":11.5,"wd":"19-27 min","b":"San Gregorio via 84","bd":"35-40 min","note":"Tucked-away pockets with good access to both downtown and 101."},{"c":"Menlo Park","n":"Sharon Heights","lat":37.421,"lng":-122.209,"s":[3.5,2.5,3,3,4.5,3.5,5,5,4,4.5,3.5,4],"rl":7000,"rh":10000,"wm":13,"wd":"21-29 min","b":"San Gregorio via 84","bd":"30-35 min","note":"Old La Honda and Portola Rd cycling on your doorstep. You drive for everything else."},{"c":"Menlo Park","n":"Belle Haven","lat":37.478,"lng":-122.161,"s":[4,3.5,3,3,3.5,5,4,4,4.5,4,3.5,3],"rl":4500,"rh":6000,"wm":11,"wd":"17-25 min","b":"San Gregorio via 84","bd":"40-45 min","note":"By far the cheapest Menlo Park housing. Fewer amenities, mixed reputation, changing fast."},{"c":"San Carlos","n":"Howard Park","lat":37.505,"lng":-122.263,"s":[4,5,4.5,4,5,4,5,4.5,4.5,4,3.5,4.5],"rl":6000,"rh":8000,"wm":19,"wd":"25-36 min","b":"Half Moon Bay via 92","bd":"27-32 min","note":"Laurel St walkability with genuinely attainable rents. Strong sleeper pick."},{"c":"San Carlos","n":"White Oaks","lat":37.494,"lng":-122.257,"s":[4,4.5,4.5,4,5,4.5,5,4.5,4.5,4,3.5,4.5],"rl":6000,"rh":8000,"wm":19,"wd":"25-36 min","b":"Half Moon Bay via 92","bd":"27-32 min","note":"Family-heavy, flat, walkable to Laurel St, good value for the Peninsula."},{"c":"San Carlos","n":"Clearfield Park","lat":37.514,"lng":-122.245,"s":[4,3.5,4,3.5,4.5,5,4.5,4,4,3.5,3.5,4],"rl":5500,"rh":7000,"wm":18,"wd":"24-35 min","b":"Half Moon Bay via 92","bd":"30-35 min","note":"Cheapest San Carlos, east side near 101. Flat and easy with a stroller."},{"c":"San Carlos","n":"Beverly Terrace","lat":37.487,"lng":-122.281,"s":[3.5,3,3.5,3.5,5,4,5,5,4,3.5,3.5,4.5],"rl":6000,"rh":8000,"wm":20,"wd":"27-38 min","b":"Half Moon Bay via 92","bd":"26-31 min","note":"Hillside, quiet, great running. Steep streets are hard with a pram."},{"c":"San Mateo","n":"Hayward Park","lat":37.552,"lng":-122.315,"s":[3,4.5,5,4.5,4.5,4,4.5,4.5,4.5,4,4,5],"rl":5500,"rh":7500,"wm":23,"wd":"29-43 min","b":"Half Moon Bay via 92","bd":"22-27 min","note":"Best food access on the Peninsula, walkable, Caltrain right there. Commute is the weak point."},{"c":"San Mateo","n":"Baywood / San Mateo Park","lat":37.56,"lng":-122.33,"s":[3,4,5,4.5,5,3.5,4.5,4.5,4.5,4,4,5],"rl":6500,"rh":9000,"wm":24,"wd":"31-45 min","b":"Half Moon Bay via 92","bd":"20-25 min","note":"Gorgeous tree-lined streets near Central Park and downtown."},{"c":"San Mateo","n":"Bay Meadows","lat":37.545,"lng":-122.302,"s":[3,4.5,4.5,4,4.5,4,4.5,4,5,4,4,4.5],"rl":5500,"rh":7500,"wm":23,"wd":"29-43 min","b":"Half Moon Bay via 92","bd":"24-29 min","note":"Newest housing stock on the list, modern amenities, purpose-built parks."},{"c":"San Mateo","n":"Aragon","lat":37.556,"lng":-122.327,"s":[3,3.5,4.5,4.5,5,3.5,4.5,4.5,4.5,4,4,5],"rl":5500,"rh":7500,"wm":24,"wd":"31-45 min","b":"Half Moon Bay via 92","bd":"21-26 min","note":"Quiet, established, strong schools, short drive to downtown."},{"c":"San Mateo","n":"Shoreview","lat":37.56,"lng":-122.295,"s":[3,3,3.5,3.5,4,5,4,3.5,4,3.5,3.5,4.5],"rl":5000,"rh":6500,"wm":23,"wd":"29-43 min","b":"Half Moon Bay via 92","bd":"26-31 min","note":"Most affordable San Mateo. Bay side, further from the good streets."},{"c":"Redwood City","n":"Mount Carmel","lat":37.478,"lng":-122.235,"s":[4,4.5,4.5,4.5,5,4.5,5,4.5,4.5,4,3.5,4.5],"rl":5500,"rh":8000,"wm":17,"wd":"23-33 min","b":"Half Moon Bay via 92","bd":"28-33 min","note":"The standout Redwood City pocket: walkable to downtown, leafy, family-heavy, still attainable."},{"c":"Redwood City","n":"Woodside Plaza","lat":37.47,"lng":-122.242,"s":[4,3.5,3.5,3.5,4.5,5,4.5,4.5,4,3.5,3.5,4.5],"rl":5500,"rh":8000,"wm":17,"wd":"23-33 min","b":"Half Moon Bay / San Gregorio","bd":"28-33 min","note":"Good value, quiet, easy to Woodside Rd cycling."},{"c":"Redwood City","n":"Emerald Hills / Farm Hill","lat":37.462,"lng":-122.268,"s":[3.5,2.5,3,3,5,4,5,5,4,4,3,4.5],"rl":6000,"rh":8500,"wm":18,"wd":"25-35 min","b":"San Gregorio via 84","bd":"27-32 min","note":"Canada Rd and the coast range from the door. Hilly, car-dependent."},{"c":"Redwood City","n":"Downtown Redwood City","lat":37.486,"lng":-122.229,"s":[4,5,5,4.5,3.5,4.5,4,4,4,3.5,3.5,4],"rl":5500,"rh":8000,"wm":16,"wd":"22-32 min","b":"Half Moon Bay via 92","bd":"30-35 min","note":"Genuinely urban, best restaurant density south of San Mateo. Less baby-friendly."},{"c":"Redwood City","n":"Redwood Shores","lat":37.532,"lng":-122.248,"s":[3.5,3,3,3,5,4,5,3.5,4.5,4.5,3,3.5],"rl":5500,"rh":8000,"wm":18,"wd":"24-34 min","b":"Half Moon Bay via 92","bd":"33-38 min","note":"Lagoon on your doorstep and flat Bay Trail running. Isolated, no walkable downtown."},{"c":"Burlingame","n":"Easton Addition","lat":37.585,"lng":-122.372,"s":[2.5,4.5,5,4.5,5,3,4,4.5,4,3.5,3.5,4.5],"rl":6500,"rh":8800,"wm":29,"wd":"36-52 min","b":"Half Moon Bay via 92","bd":"25-30 min","note":"Burlingame Ave bakeries and cafes, excellent schools. Commute is the dealbreaker."},{"c":"Burlingame","n":"Ray Park","lat":37.578,"lng":-122.375,"s":[2.5,3.5,4,4,5,3,4.5,5,4,3.5,3.5,4.5],"rl":6500,"rh":8800,"wm":29,"wd":"36-52 min","b":"Half Moon Bay via 92","bd":"24-29 min","note":"Quiet, close to Skyline and Crystal Springs cycling."},{"c":"Burlingame","n":"Burlingame Park","lat":37.578,"lng":-122.36,"s":[2.5,4.5,5,4.5,5,2.5,4,4.5,4,3.5,3.5,4.5],"rl":7500,"rh":10000,"wm":29,"wd":"36-52 min","b":"Half Moon Bay via 92","bd":"24-29 min","note":"Prettiest streets in Burlingame, and the priciest."},{"c":"Burlingame","n":"Lyon Hoag","lat":37.59,"lng":-122.353,"s":[2.5,4,4.5,4,4,4,4,4,4,3.5,3.5,4.5],"rl":5500,"rh":7500,"wm":28,"wd":"35-51 min","b":"Half Moon Bay via 92","bd":"26-31 min","note":"Most affordable Burlingame, east of the tracks, walkable to Broadway."},{"c":"Cupertino","n":"Garden Gate","lat":37.325,"lng":-122.03,"s":[4.5,3.5,4.5,4,4.5,3.5,4,4.5,4,4,3,3.5],"rl":5500,"rh":7000,"wm":7.5,"wd":"15-21 min","b":"Santa Cruz via 85 / 17","bd":"38-45 min","note":"Central Cupertino near Main Street and Cupertino Village. Best food density in the city, decent commute."},{"c":"Cupertino","n":"Monta Vista","lat":37.315,"lng":-122.058,"s":[4,3.5,4,4,5,3,5,5,4,4,3,4],"rl":6000,"rh":8000,"wm":9.5,"wd":"18-25 min","b":"Santa Cruz via 85 / 17","bd":"35-42 min","note":"Foothill Cupertino. Small walkable village, Rancho San Antonio and Stevens Canyon cycling on the doorstep, top schools."},{"c":"Cupertino","n":"Rancho Rinconada","lat":37.324,"lng":-122.008,"s":[4.5,2.5,4,4,4.5,4.5,3.5,4,4,4,3,3.5],"rl":5000,"rh":6500,"wm":6,"wd":"13-19 min","b":"Santa Cruz via 85 / 17","bd":"40-47 min","note":"Most affordable Cupertino, east side near 280. Cupertino schools without Cupertino prices."},{"c":"Cupertino","n":"Oak Valley","lat":37.338,"lng":-122.07,"s":[4.5,2,3.5,4,5,2.5,5,5,4,4,3,3.5],"rl":6500,"rh":8500,"wm":9,"wd":"17-24 min","b":"Santa Cruz via 85 / 17","bd":"38-45 min","note":"Upscale, quiet, backs onto Rancho San Antonio. Expensive and you drive for everything."},{"c":"Cupertino","n":"Seven Springs","lat":37.303,"lng":-122.045,"s":[4,2.5,3.5,4,4.5,3.5,4.5,5,4,4,3,4],"rl":5500,"rh":7000,"wm":10,"wd":"19-26 min","b":"Santa Cruz via 85 / 17","bd":"35-42 min","note":"South Cupertino toward Stevens Creek Reservoir. Excellent cycling, very quiet."},{"c":"Foster City","n":"Marlin Cove / Bounty Dr","lat":37.555,"lng":-122.262,"s":[2.5,3,3,3,5,4,5,3,4.5,5,3,4.5],"rl":5500,"rh":8000,"wm":22,"wd":"29-46 min","b":"Half Moon Bay via 92","bd":"25-30 min","note":"Closest to Gull Park where Team Asha swims. The Lagoons complex is here. Best open water access anywhere on the list."},{"c":"Foster City","n":"Edgewater Isle","lat":37.564,"lng":-122.276,"s":[2.5,3,3.5,3,5,3.5,5,3,4.5,5,3,4.5],"rl":5500,"rh":8000,"wm":22,"wd":"29-46 min","b":"Half Moon Bay via 92","bd":"25-30 min","note":"Nearest thing Foster City has to walkable, next to Edgewater shopping. Lagoon frontage."},{"c":"Foster City","n":"Sea Colony","lat":37.548,"lng":-122.268,"s":[2.5,2.5,3,3,5,4,5,3,4.5,5,3,4.5],"rl":5500,"rh":8000,"wm":22,"wd":"29-46 min","b":"Half Moon Bay via 92","bd":"26-31 min","note":"Quiet residential, good value for Foster City, easy lagoon access."},{"c":"Foster City","n":"Isle Cove","lat":37.552,"lng":-122.253,"s":[2.5,2.5,3,3,5,4,4.5,3,4.5,5,3,4.5],"rl":5500,"rh":8000,"wm":22,"wd":"26-46 min","b":"Half Moon Bay via 92","bd":"26-31 min","note":"Interior island, calm and family-heavy, slightly further from the water."},{"c":"Foster City","n":"Treasure Island","lat":37.567,"lng":-122.253,"s":[2.5,2.5,3,3,4.5,3.5,5,3,4.5,5,3,4.5],"rl":5500,"rh":8000,"wm":23,"wd":"30-47 min","b":"Half Moon Bay via 92","bd":"27-32 min","note":"Waterfront on the outer edge, quiet, most exposed to the midge issue."},{"c":"Sunnyvale","n":"Cherry Chase","lat":37.363,"lng":-122.043,"s":[5,4,4,4.5,5,4,4.5,5,4,4,3.5,3],"rl":5000,"rh":6500,"wm":4,"wd":"10-14 min","b":"Santa Cruz via 85 / 17","bd":"40-48 min","note":"Closest non-Mountain View option to the office. Quiet, family-heavy, walkable-ish to Murphy Ave. Strong sleeper pick."},{"c":"Sunnyvale","n":"Heritage District","lat":37.377,"lng":-122.03,"s":[4.5,5,4.5,5,4,4,4,4.5,4,4,3.5,3],"rl":5000,"rh":6500,"wm":4.5,"wd":"10-15 min","b":"Santa Cruz via 85 / 17","bd":"40-48 min","note":"Downtown Sunnyvale. Murphy Ave, Saturday farmers market, Caltrain, Whole Foods, all on foot."},{"c":"Sunnyvale","n":"Sunnyvale West","lat":37.38,"lng":-122.045,"s":[5,3.5,3.5,4,4.5,4.5,4,4.5,4,4,3.5,3],"rl":5000,"rh":6500,"wm":4,"wd":"10-14 min","b":"Santa Cruz via 85 / 17","bd":"42-50 min","note":"Very short commute and better value than Mountain View for similar housing stock."},{"c":"Sunnyvale","n":"Ortega Park","lat":37.352,"lng":-122.018,"s":[4.5,3.5,4,4,5,4.5,4.5,4.5,4,4,3.5,3],"rl":5000,"rh":6500,"wm":5,"wd":"11-16 min","b":"Santa Cruz via 85 / 17","bd":"40-48 min","note":"Family-dense, good parks, easy to both 101 and 85."},{"c":"Santa Clara","n":"Old Quad","lat":37.35,"lng":-121.945,"s":[4.5,4,4,4,4.5,4.5,4,4,5,5,3,3],"rl":4500,"rh":6000,"wm":7,"wd":"15-21 min","b":"Santa Cruz via 17","bd":"42-50 min","note":"Santa Clara Swim Club is here, one of the strongest masters programmes in the country. Historic walkable core, good value."},{"c":"San Jose","n":"Willow Glen","lat":37.303,"lng":-121.898,"s":[3,5,4.5,4,5,5,4.5,4.5,4,4,3.5,4],"rl":4000,"rh":5500,"wm":14,"wd":"22-33 min","b":"Santa Cruz via 17","bd":"33-42 min","note":"Best walkability per dollar anywhere on this list. Lincoln Ave is a real high street. Commute is the price."},{"c":"San Jose","n":"Rose Garden","lat":37.334,"lng":-121.925,"s":[3,4.5,4,4,5,5,4.5,4.5,4,4,3.5,3.5],"rl":4000,"rh":5500,"wm":13,"wd":"21-31 min","b":"Santa Cruz via 17","bd":"35-44 min","note":"Beautiful older housing, tree-lined, strong value. Similar tradeoff to Willow Glen."},{"c":"Los Gatos","n":"Downtown Los Gatos","lat":37.226,"lng":-121.982,"s":[3,5,5,4.5,5,2.5,5,5,4.5,4.5,4,4.5],"rl":7000,"rh":9500,"wm":14,"wd":"23-33 min","b":"Santa Cruz via 17","bd":"25-33 min","note":"Best lifestyle score on the list if commute is negotiable. Creek trail, hill cycling, 25 min to Santa Cruz. Expensive."},{"c":"Campbell","n":"Downtown Campbell","lat":37.287,"lng":-121.945,"s":[3.5,5,4.5,5,5,4,5,4.5,4,4,3.5,4],"rl":4500,"rh":6000,"wm":11,"wd":"20-29 min","b":"Santa Cruz via 17","bd":"30-38 min","note":"Excellent Sunday farmers market, genuinely walkable, Los Gatos Creek Trail, far more attainable than Los Gatos."},{"c":"Belmont","n":"Belmont Heights / Hallmark","lat":37.514,"lng":-122.298,"s":[3,3.5,3.5,3.5,5,4.5,5,4.5,4,4,3.5,4.5],"rl":5500,"rh":7500,"wm":21,"wd":"27-39 min","b":"Half Moon Bay via 92","bd":"24-29 min","note":"Fills the gap between San Carlos and San Mateo. Water Dog Lake trails, quick to the coast, hilly."},{"c":"Portola Valley","n":"Portola Valley","lat":37.384,"lng":-122.235,"s":[3.5,2,2.5,2.5,4.5,2.5,5,5,3.5,4.5,2.5,4.5],"rl":8000,"rh":12000,"wm":14,"wd":"23-32 min","b":"San Gregorio via 84","bd":"25-32 min","note":"Cycling paradise, Old La Honda and Alpine from the door. No walkability, expensive, hard with a baby."},{"c":"Woodside","n":"Woodside","lat":37.43,"lng":-122.254,"s":[3.5,2,3,2.5,4.5,2.5,5,5,3.5,4.5,2.5,5],"rl":8000,"rh":12000,"wm":16,"wd":"26-36 min","b":"San Gregorio via 84","bd":"22-30 min","note":"Same tradeoff as Portola Valley with slightly better beach access via 84."},{"c":"Half Moon Bay","n":"Half Moon Bay town","lat":37.464,"lng":-122.429,"s":[1.5,4,4,3.5,4.5,4.5,5,5,3.5,4,2,5],"rl":4500,"rh":6500,"wm":31,"wd":"45-60 min","b":"Poplar / Dunes Beach","bd":"5 min","note":"Beach at the door and a real small town. The commute over 92 twice a day is the whole question."},{"c":"Half Moon Bay","n":"Montara / Moss Beach","lat":37.542,"lng":-122.512,"s":[1,2.5,3,2.5,4,4.5,5,5,3,3.5,1.5,5],"rl":4500,"rh":6500,"wm":36,"wd":"52-70 min","b":"Montara State Beach","bd":"walkable","note":"Spectacular coast living. Commute is close to unworkable for a daily office."}];
+
+// Curated real facilities (not OSM/generic queries) so "pools" means actual lap-swim
+// venues, not backyard/rec pools. Coordinates are street-level approximations from
+// each venue's public address, good enough for a planning map, not turn-by-turn.
+const POIS = [
+  { type: "pool", name: "Rinconada Pool", lat: 37.4463, lng: -122.1421, note: "777 Embarcadero Rd, Palo Alto — public lap pool, master's swim" },
+  { type: "pool", name: "Burgess Pool (Menlo Swim & Sport)", lat: 37.4529, lng: -122.1825, note: "501 Laurel St, Menlo Park — lap lanes, Team Sheeper base" },
+  { type: "pool", name: "Santa Clara Swim Club", lat: 37.3388, lng: -121.9722, note: "2625 Patricia Dr, Santa Clara — competitive masters programme" },
+  { type: "pool", name: "Greenmeadow Community Pool", lat: 37.4137, lng: -122.1173, note: "303 Parkside Dr, Palo Alto — neighbourhood association lap pool" },
+  { type: "lagree", name: "Transform Fitness Studio", lat: 37.3934, lng: -122.0818, note: "319 Castro St, Mountain View — Lagree / Megaformer" },
+  { type: "lagree", name: "Lagree Fitness Club", lat: 37.4419, lng: -122.1611, note: "855 El Camino Real, Palo Alto (Town & Country Village)" },
+  { type: "lagree", name: "x2o Studio", lat: 37.5072, lng: -122.2605, note: "1156 San Carlos Ave, San Carlos — Pilates/Megaformer-style" },
+  { type: "park", name: "Shoreline Park", lat: 37.4259, lng: -122.0806, note: "3160 N Shoreline Blvd, Mountain View — lake, trails, open space" },
+  { type: "park", name: "Cuesta Park", lat: 37.3736, lng: -122.0813, note: "615 Cuesta Dr, Mountain View — big neighbourhood park, playground" },
+  { type: "park", name: "Rancho San Antonio", lat: 37.3346, lng: -122.0916, note: "22500 Cristo Rey Dr, Cupertino — open space preserve, trailhead" },
+  { type: "park", name: "Central Park", lat: 37.5648, lng: -122.3208, note: "50 E 5th Ave, San Mateo — downtown park, playground, Japanese garden" },
+  { type: "market", name: "Mountain View Farmers' Market", lat: 37.3947, lng: -122.0762, note: "Sundays 9-1, Caltrain lot near Castro St" },
+  { type: "market", name: "Sunnyvale Farmers' Market", lat: 37.3777, lng: -122.0308, note: "Saturdays 9-1, Murphy Ave at Washington" },
+  { type: "market", name: "California Ave Farmers Market", lat: 37.4290, lng: -122.1428, note: "Sundays 9-1, Palo Alto" },
+  { type: "market", name: "Campbell Farmers Market", lat: 37.2872, lng: -121.9447, note: "Sundays 9-1, Downtown Campbell" },
+];
+const POI_META = {
+  pool: { label: "Lap swimming pools", color: "#4FB6E8" },
+  lagree: { label: "Lagree / Pilates", color: "#D97AC2" },
+  park: { label: "Parks", color: "#7FBF6A" },
+  market: { label: "Farmers markets", color: "#D4B106" },
+};
 
 const C = {
   ink: "#08131B",
@@ -216,22 +246,46 @@ body { margin: 0; }
   .mapwrap { position: sticky; top: 18px; }
 }
 
-.chart { width: 100%; height: auto; display: block; margin-top: 18px; }
-.rd {
-  font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: ${C.grid};
-  letter-spacing: .06em;
+.leafmap {
+  width: 100%; height: 620px; margin-top: 18px; border: 1px solid ${C.grid};
+  background: ${C.water};
 }
-.hq {
-  font-family: 'IBM Plex Mono', monospace; font-size: 11px; fill: ${C.bone};
-  letter-spacing: .13em;
+.leaflet-container { background: ${C.water}; font-family: 'Archivo', sans-serif; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: ${C.panel}; color: ${C.bone}; border: 1px solid ${C.grid};
+  box-shadow: none; border-radius: 2px;
 }
-.pin {
-  font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 13px;
-  fill: ${C.amber}; letter-spacing: .06em;
+.leaflet-popup-content { margin: 10px 12px; font-size: 12.5px; line-height: 1.5; }
+.leaflet-popup-content b { color: ${C.bone}; }
+.leaflet-popup-close-button { color: ${C.mute} !important; }
+.leaflet-control-attribution {
+  background: rgba(8,19,27,.72) !important; color: ${C.mute} !important; font-size: 9px !important;
 }
+.leaflet-control-attribution a { color: ${C.teal} !important; }
+.leaflet-control-zoom a {
+  background: ${C.panel} !important; color: ${C.bone} !important; border-color: ${C.grid} !important;
+}
+.leaflet-control-zoom a:hover { background: ${C.faint} !important; }
+.hq-tip, .pin-tip {
+  background: transparent !important; border: 0 !important; box-shadow: none !important;
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .1em;
+  color: ${C.bone} !important; padding: 0 !important;
+}
+.pin-tip {
+  font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 13px; color: ${C.amber} !important;
+}
+.hq-tip::before, .pin-tip::before { display: none !important; }
+.poi-toggles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.poi-chip {
+  font-family: 'Archivo', sans-serif; font-size: 12px; cursor: pointer;
+  background: transparent; color: ${C.mute}; border: 1px solid ${C.faint};
+  padding: 5px 9px 5px 7px; border-radius: 2px; display: inline-flex; align-items: center; gap: 6px;
+}
+.poi-chip-on { background: ${C.panel}; color: ${C.bone}; }
+.poi-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .legend {
   font-family: 'Archivo', sans-serif; font-size: 11.5px; color: ${C.mute};
-  line-height: 1.5; margin-top: 8px; max-width: 42ch;
+  line-height: 1.5; margin-top: 8px; max-width: 46ch;
 }
 
 .side { margin-top: 26px; }
@@ -326,32 +380,10 @@ table.cmp tr:hover td { background: ${C.panel}; }
 
 const WAYMO = { lat: 37.4005, lng: -122.0495, label: "Waymo HQ" };
 
-const BAY = [
-  [37.62, -122.34], [37.60, -122.31], [37.57, -122.27], [37.545, -122.235],
-  [37.52, -122.215], [37.495, -122.19], [37.47, -122.155], [37.452, -122.115],
-  [37.44, -122.08], [37.432, -122.04], [37.425, -121.995], [37.41, -121.96],
-  [37.465, -121.93], [37.52, -121.95], [37.57, -122.02], [37.62, -122.10],
-];
-const COAST = [
-  [37.62, -122.51], [37.575, -122.515], [37.535, -122.513], [37.505, -122.50],
-  [37.478, -122.465], [37.452, -122.443], [37.41, -122.425], [37.35, -122.405],
-  [37.30, -122.397], [37.245, -122.412], [37.185, -122.393], [37.12, -122.315],
-  [37.05, -122.16], [36.98, -122.03], [36.95, -121.92],
-];
-const ROADS = [
-  { id: "101", pts: [[37.62,-122.39],[37.58,-122.35],[37.545,-122.305],[37.50,-122.24],[37.47,-122.19],[37.445,-122.145],[37.42,-122.10],[37.40,-122.05],[37.37,-121.99],[37.345,-121.94],[37.31,-121.885]] },
-  { id: "280", pts: [[37.62,-122.44],[37.575,-122.40],[37.535,-122.36],[37.495,-122.315],[37.455,-122.275],[37.415,-122.225],[37.375,-122.17],[37.345,-122.105],[37.325,-122.03],[37.315,-121.955],[37.305,-121.89]] },
-  { id: "92",  pts: [[37.558,-122.30],[37.545,-122.35],[37.515,-122.41],[37.494,-122.455]] },
-  { id: "84",  pts: [[37.462,-122.20],[37.435,-122.245],[37.405,-122.29],[37.365,-122.345],[37.325,-122.40]] },
-  { id: "85",  pts: [[37.425,-122.095],[37.395,-122.065],[37.355,-122.035],[37.315,-122.005],[37.28,-121.965],[37.255,-121.945]] },
-  { id: "17",  pts: [[37.285,-121.945],[37.245,-121.975],[37.185,-121.985],[37.105,-122.005],[37.03,-122.025],[36.975,-122.02]] },
-];
-
-const LAT0 = 36.94, LAT1 = 37.635, LNG0 = -122.545, LNG1 = -121.865;
-const VW = 700, VH = 1000;
-const px = (lng) => ((lng - LNG0) / (LNG1 - LNG0)) * VW;
-const py = (lat) => ((LAT1 - lat) / (LAT1 - LAT0)) * VH;
-const path = (pts) => pts.map((p, i) => `${i ? "L" : "M"}${px(p[1]).toFixed(1)} ${py(p[0]).toFixed(1)}`).join(" ");
+// Dark raster basemap, no API key required.
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_matter/{z}/{x}/{y}{r}.png";
+const TILE_ATTRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const ISO_MINUTES = [40, 30, 20, 10]; // rendered largest-first so smaller rings sit on top
 
 const money = (n) => "$" + n.toLocaleString();
 
@@ -364,7 +396,14 @@ function PeninsulaChart() {
   const [sel, setSel] = useState(null);
   const [compare, setCompare] = useState([]);
   const [tuning, setTuning] = useState(false);
+  const [poiLayers, setPoiLayers] = useState({ pool: true, lagree: true, park: false, market: false });
   const listRef = useRef(null);
+  const mapDiv = useRef(null);
+  const mapObj = useRef(null);
+  const placeLayer = useRef(null);
+  const lineLayer = useRef(null);
+  const poiGroups = useRef({});
+  const isoLayer = useRef(null);
 
   const activeIdx = useMemo(() => weights.map((v, i) => (v > 0 ? i : -1)).filter((i) => i >= 0), [weights]);
 
@@ -409,6 +448,102 @@ function PeninsulaChart() {
       if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   };
+
+  const togglePoi = (type) => setPoiLayers((p) => ({ ...p, [type]: !p[type] }));
+
+  // Init the map once.
+  useEffect(() => {
+    if (!mapDiv.current || mapObj.current) return;
+    const map = L.map(mapDiv.current, { scrollWheelZoom: true });
+    L.tileLayer(TILE_URL, { subdomains: "abcd", maxZoom: 19, attribution: TILE_ATTRIB }).addTo(map);
+    map.fitBounds(L.latLngBounds(PLACES.map((p) => [p.lat, p.lng])), { padding: [24, 24] });
+
+    L.circleMarker([WAYMO.lat, WAYMO.lng], {
+      radius: 7, color: C.bone, weight: 1.6, fillColor: C.ink, fillOpacity: 1,
+    }).addTo(map).bindTooltip("WAYMO HQ", { permanent: true, direction: "right", offset: [8, 0], className: "hq-tip" });
+
+    placeLayer.current = L.layerGroup().addTo(map);
+    lineLayer.current = L.layerGroup().addTo(map);
+    Object.keys(POI_META).forEach((t) => { poiGroups.current[t] = L.layerGroup(); });
+
+    mapObj.current = map;
+
+    if (window.ORS_API_KEY) {
+      fetch("https://api.openrouteservice.org/v2/isochrones/driving-car", {
+        method: "POST",
+        headers: { Authorization: window.ORS_API_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locations: [[WAYMO.lng, WAYMO.lat]],
+          range: ISO_MINUTES.map((m) => m * 60).sort((a, b) => b - a),
+          range_type: "time",
+        }),
+      })
+        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then((geojson) => {
+          const maxSeconds = Math.max(...ISO_MINUTES) * 60;
+          isoLayer.current = L.geoJSON(geojson, {
+            style: (f) => ({
+              color: "none",
+              fillColor: C.amber,
+              // smaller (faster) rings get progressively more opaque
+              fillOpacity: 0.1 + 0.35 * (1 - f.properties.value / maxSeconds),
+              weight: 0,
+            }),
+          }).addTo(map);
+          isoLayer.current.bringToBack();
+        })
+        .catch((err) => console.warn("Isochrone layer unavailable:", err));
+    }
+  }, []);
+
+  // Redraw neighbourhood markers + Waymo line when scoring/visibility/selection changes.
+  useEffect(() => {
+    if (!placeLayer.current || !lineLayer.current) return;
+    placeLayer.current.clearLayers();
+    lineLayer.current.clearLayers();
+
+    scored.forEach((p) => {
+      const shown = visibleNames.has(p.n);
+      const isSel = sel === p.n;
+      const r = shown ? 4 + norm(p.score) * 11 : 3;
+      const marker = L.circleMarker([p.lat, p.lng], {
+        radius: r,
+        color: shown ? (isSel ? C.bone : C.dotEdge) : C.faint,
+        weight: isSel ? 1.8 : 1,
+        fillColor: shown ? (isSel ? C.amber : C.dot) : "transparent",
+        fillOpacity: shown ? 1 : 0.35,
+        opacity: shown ? 1 : 0.6,
+      }).addTo(placeLayer.current);
+      marker.on("click", () => pick(p.n));
+      if (isSel) {
+        marker.bindTooltip(p.n, { permanent: true, direction: "top", offset: [0, -r], className: "pin-tip" }).openTooltip();
+        L.polyline([[p.lat, p.lng], [WAYMO.lat, WAYMO.lng]], {
+          color: C.amber, weight: 1.4, dashArray: "3 5", opacity: 0.85,
+        }).addTo(lineLayer.current);
+      }
+    });
+  }, [scored, visibleNames, sel]);
+
+  // Show/hide POI layer groups.
+  useEffect(() => {
+    if (!mapObj.current) return;
+    Object.entries(poiGroups.current).forEach(([type, group]) => {
+      if (poiLayers[type] && !mapObj.current.hasLayer(group)) group.addTo(mapObj.current);
+      if (!poiLayers[type] && mapObj.current.hasLayer(group)) mapObj.current.removeLayer(group);
+    });
+  }, [poiLayers]);
+
+  // Populate POI markers once (static dataset).
+  useEffect(() => {
+    POIS.forEach((poi) => {
+      const meta = POI_META[poi.type];
+      const marker = L.circleMarker([poi.lat, poi.lng], {
+        radius: 5, color: C.ink, weight: 1, fillColor: meta.color, fillOpacity: 0.9,
+      });
+      marker.bindPopup(`<b>${poi.name}</b><br/>${poi.note}`);
+      marker.addTo(poiGroups.current[poi.type]);
+    });
+  }, []);
 
   return (
     <div style={{ background: C.ink, minHeight: "100vh", color: C.bone }}>
@@ -504,71 +639,26 @@ function PeninsulaChart() {
 
       <div className="split">
         <div className="mapwrap">
-          <svg viewBox={`0 0 ${VW} ${VH}`} className="chart" role="img" aria-label="Map of Peninsula neighbourhoods">
-            <defs>
-              <radialGradient id="halo">
-                <stop offset="0%" stopColor={C.amber} stopOpacity="0.5" />
-                <stop offset="100%" stopColor={C.amber} stopOpacity="0" />
-              </radialGradient>
-            </defs>
-
-            <path d={path(BAY) + " Z"} fill={C.water} stroke={C.teal} strokeWidth="1" opacity="0.75" />
-            <path d={path(COAST)} fill="none" stroke={C.teal} strokeWidth="1.4" opacity="0.8" />
-
-            {ROADS.map((r) => (
-              <g key={r.id}>
-                <path d={path(r.pts)} fill="none" stroke={C.grid} strokeWidth="1" strokeDasharray="5 5" />
-                <text x={px(r.pts[0][1])} y={py(r.pts[0][0]) - 6} className="rd">{r.id}</text>
-              </g>
-            ))}
-
-            {selected && (
-              <line
-                x1={px(selected.lng)} y1={py(selected.lat)}
-                x2={px(WAYMO.lng)} y2={py(WAYMO.lat)}
-                stroke={C.amber} strokeWidth="1.2" strokeDasharray="3 4" opacity="0.9"
-              />
-            )}
-
-            {scored.map((p) => {
-              const shown = visibleNames.has(p.n);
-              const isSel = sel === p.n;
-              const r = shown ? 3.2 + norm(p.score) * 7.5 : 2;
-              return (
-                <g key={p.n} onClick={() => pick(p.n)} style={{ cursor: "pointer" }}>
-                  {isSel && <circle cx={px(p.lng)} cy={py(p.lat)} r={26} fill="url(#halo)" />}
-                  <circle
-                    cx={px(p.lng)} cy={py(p.lat)} r={r + 6} fill="transparent"
-                  />
-                  <circle
-                    cx={px(p.lng)} cy={py(p.lat)} r={r}
-                    fill={shown ? (isSel ? C.amber : C.dot) : "none"}
-                    stroke={shown ? (isSel ? C.bone : C.dotEdge) : C.faint}
-                    strokeWidth={isSel ? 1.6 : 1}
-                    opacity={shown ? 1 : 0.45}
-                  />
-                </g>
-              );
-            })}
-
-            <g>
-              <circle cx={px(WAYMO.lng)} cy={py(WAYMO.lat)} r="6" fill="none" stroke={C.bone} strokeWidth="1.4" />
-              <circle cx={px(WAYMO.lng)} cy={py(WAYMO.lat)} r="1.8" fill={C.bone} />
-              <text x={px(WAYMO.lng) + 11} y={py(WAYMO.lat) + 3} className="hq">WAYMO HQ</text>
-            </g>
-
-            {selected && (
-              <text
-                x={px(selected.lng)} y={py(selected.lat) - (3.2 + norm(selected.score) * 7.5) - 8}
-                className="pin" textAnchor="middle"
+          <div ref={mapDiv} className="leafmap" role="img" aria-label="Map of Peninsula neighbourhoods" />
+          <div className="poi-toggles">
+            {Object.entries(POI_META).map(([type, meta]) => (
+              <button
+                key={type}
+                className={"poi-chip" + (poiLayers[type] ? " poi-chip-on" : "")}
+                onClick={() => togglePoi(type)}
               >
-                {selected.n.split(" / ")[0].toUpperCase()}
-              </text>
-            )}
-          </svg>
+                <span className="poi-dot" style={{ background: meta.color }} />
+                {meta.label}
+              </button>
+            ))}
+          </div>
           <div className="legend">
-            Dot size is the score under your current criteria. Hollow dots fail the rent
-            or drive filter. Tap a dot for the detail.
+            Dot size is the score under your current criteria. Faint dots fail the rent
+            or drive filter. Click a dot for the detail, or a checkbox above to show real
+            lap pools, Lagree studios, parks, and farmers markets.
+            {window.ORS_API_KEY
+              ? " The amber shading is real drive-time from Waymo HQ (10/20/30/40 min)."
+              : " Add an OpenRouteService key in config.js to shade real drive-time from Waymo HQ."}
           </div>
         </div>
 
