@@ -1,8 +1,27 @@
 # Bay Area Relocation Planner
 
-Interactive chart comparing 68 Peninsula neighborhoods against commute to
-Waymo HQ, walkability, budget, and family/fitness criteria. Single static
-page (`index.html`), no build step, deployed to GitHub Pages.
+A tool for figuring out where to move based on the criteria that actually
+matter to you. It shows an interactive map comparing 68 Peninsula
+neighborhoods — commute time, walkability, rent, and family/fitness
+amenities — and lets you tune how much each criterion counts, filter by
+budget and commute, and pin a handful of neighborhoods side by side to
+compare directly.
+
+Single static page (`index.html`), no build step, deployed to GitHub Pages.
+
+## Using it
+
+- **Chips** at the top toggle a criterion on/off; double-tap a chip to
+  score on that one criterion alone.
+- **Tune weights** opens a form with a slider per criterion, so you can
+  set exactly how much each one matters (not just on/off) — the map and
+  ranked list recompute live as you drag. **Reset to defaults** restores
+  the original weighting.
+- **Rent ceiling / drive-time sliders** filter out neighborhoods that
+  don't fit your budget or commute tolerance.
+- Click any neighborhood on the map or in the ranked list to see its full
+  breakdown; click **Add to compare** to pin up to 5 side by side in a
+  table at the bottom.
 
 ## Access
 
