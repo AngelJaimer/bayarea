@@ -37,7 +37,7 @@
   #root { display: none; }
   #root.visible { display: block; }
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
 </head>
 <body>
 
@@ -56,7 +56,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.25.6/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="config.js"></script>
 
 <script>
@@ -250,6 +250,11 @@ body { margin: 0; }
   width: 100%; height: 620px; margin-top: 18px; border: 1px solid ${C.grid};
   background: ${C.water};
 }
+.maperr {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 40px; font-family: 'Archivo', sans-serif; font-size: 13px; color: ${C.mute};
+  max-width: 40ch; margin-left: auto; margin-right: auto;
+}
 .leaflet-container { background: ${C.water}; font-family: 'Archivo', sans-serif; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
   background: ${C.panel}; color: ${C.bone}; border: 1px solid ${C.grid};
@@ -397,6 +402,7 @@ function PeninsulaChart() {
   const [compare, setCompare] = useState([]);
   const [tuning, setTuning] = useState(false);
   const [poiLayers, setPoiLayers] = useState({ pool: true, lagree: true, park: false, market: false });
+  const [mapError, setMapError] = useState(null);
   const listRef = useRef(null);
   const mapDiv = useRef(null);
   const mapObj = useRef(null);
@@ -451,48 +457,59 @@ function PeninsulaChart() {
 
   const togglePoi = (type) => setPoiLayers((p) => ({ ...p, [type]: !p[type] }));
 
-  // Init the map once.
+  // Init the map once. Guarded: a CDN hiccup (e.g. Leaflet failing to load) should
+  // degrade to "no map" rather than crash the whole page -- everything else here
+  // (chips, weights, filters, ranked list, compare table) doesn't depend on it.
   useEffect(() => {
     if (!mapDiv.current || mapObj.current) return;
-    const map = L.map(mapDiv.current, { scrollWheelZoom: true });
-    L.tileLayer(TILE_URL, { subdomains: "abcd", maxZoom: 19, attribution: TILE_ATTRIB }).addTo(map);
-    map.fitBounds(L.latLngBounds(PLACES.map((p) => [p.lat, p.lng])), { padding: [24, 24] });
+    if (typeof L === "undefined") {
+      setMapError("Map library didn't load (likely a network hiccup). Try reloading the page.");
+      return;
+    }
+    try {
+      const map = L.map(mapDiv.current, { scrollWheelZoom: true });
+      L.tileLayer(TILE_URL, { subdomains: "abcd", maxZoom: 19, attribution: TILE_ATTRIB }).addTo(map);
+      map.fitBounds(L.latLngBounds(PLACES.map((p) => [p.lat, p.lng])), { padding: [24, 24] });
 
-    L.circleMarker([WAYMO.lat, WAYMO.lng], {
-      radius: 7, color: C.bone, weight: 1.6, fillColor: C.ink, fillOpacity: 1,
-    }).addTo(map).bindTooltip("WAYMO HQ", { permanent: true, direction: "right", offset: [8, 0], className: "hq-tip" });
+      L.circleMarker([WAYMO.lat, WAYMO.lng], {
+        radius: 7, color: C.bone, weight: 1.6, fillColor: C.ink, fillOpacity: 1,
+      }).addTo(map).bindTooltip("WAYMO HQ", { permanent: true, direction: "right", offset: [8, 0], className: "hq-tip" });
 
-    placeLayer.current = L.layerGroup().addTo(map);
-    lineLayer.current = L.layerGroup().addTo(map);
-    Object.keys(POI_META).forEach((t) => { poiGroups.current[t] = L.layerGroup(); });
+      placeLayer.current = L.layerGroup().addTo(map);
+      lineLayer.current = L.layerGroup().addTo(map);
+      Object.keys(POI_META).forEach((t) => { poiGroups.current[t] = L.layerGroup(); });
 
-    mapObj.current = map;
+      mapObj.current = map;
 
-    if (window.ORS_API_KEY) {
-      fetch("https://api.openrouteservice.org/v2/isochrones/driving-car", {
-        method: "POST",
-        headers: { Authorization: window.ORS_API_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          locations: [[WAYMO.lng, WAYMO.lat]],
-          range: ISO_MINUTES.map((m) => m * 60).sort((a, b) => b - a),
-          range_type: "time",
-        }),
-      })
-        .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-        .then((geojson) => {
-          const maxSeconds = Math.max(...ISO_MINUTES) * 60;
-          isoLayer.current = L.geoJSON(geojson, {
-            style: (f) => ({
-              color: "none",
-              fillColor: C.amber,
-              // smaller (faster) rings get progressively more opaque
-              fillOpacity: 0.1 + 0.35 * (1 - f.properties.value / maxSeconds),
-              weight: 0,
-            }),
-          }).addTo(map);
-          isoLayer.current.bringToBack();
+      if (window.ORS_API_KEY) {
+        fetch("https://api.openrouteservice.org/v2/isochrones/driving-car", {
+          method: "POST",
+          headers: { Authorization: window.ORS_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            locations: [[WAYMO.lng, WAYMO.lat]],
+            range: ISO_MINUTES.map((m) => m * 60).sort((a, b) => b - a),
+            range_type: "time",
+          }),
         })
-        .catch((err) => console.warn("Isochrone layer unavailable:", err));
+          .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+          .then((geojson) => {
+            const maxSeconds = Math.max(...ISO_MINUTES) * 60;
+            isoLayer.current = L.geoJSON(geojson, {
+              style: (f) => ({
+                color: "none",
+                fillColor: C.amber,
+                // smaller (faster) rings get progressively more opaque
+                fillOpacity: 0.1 + 0.35 * (1 - f.properties.value / maxSeconds),
+                weight: 0,
+              }),
+            }).addTo(map);
+            isoLayer.current.bringToBack();
+          })
+          .catch((err) => console.warn("Isochrone layer unavailable:", err));
+      }
+    } catch (err) {
+      console.error("Map init failed:", err);
+      setMapError("Map failed to load (" + err.message + "). The rest of the page still works.");
     }
   }, []);
 
@@ -535,6 +552,7 @@ function PeninsulaChart() {
 
   // Populate POI markers once (static dataset).
   useEffect(() => {
+    if (typeof L === "undefined" || !poiGroups.current[POIS[0].type]) return;
     POIS.forEach((poi) => {
       const meta = POI_META[poi.type];
       const marker = L.circleMarker([poi.lat, poi.lng], {
@@ -639,7 +657,11 @@ function PeninsulaChart() {
 
       <div className="split">
         <div className="mapwrap">
-          <div ref={mapDiv} className="leafmap" role="img" aria-label="Map of Peninsula neighbourhoods" />
+          {mapError ? (
+            <div className="leafmap maperr">{mapError}</div>
+          ) : (
+            <div ref={mapDiv} className="leafmap" role="img" aria-label="Map of Peninsula neighbourhoods" />
+          )}
           <div className="poi-toggles">
             {Object.entries(POI_META).map(([type, meta]) => (
               <button
