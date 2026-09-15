@@ -1,7 +1,7 @@
 # Bay Area Relocation Planner
 
 A tool for figuring out where to move based on the criteria that actually
-matter to you. It shows an interactive map comparing 68 Peninsula
+matter to you. It shows an interactive map comparing 69 Peninsula
 neighborhoods — commute time, walkability, rent, and family/fitness
 amenities — and lets you tune how much each criterion counts, filter by
 budget and commute, and pin a handful of neighborhoods side by side to
