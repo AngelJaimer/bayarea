@@ -804,6 +804,8 @@ window.__mountApp = function () {
   const out = Babel.transform(src, { presets: [["react", { runtime: "classic" }]] }).code;
   const fn = new Function(out);
   fn();
+  // Already unlocked this session: the gate ran before the app existed, so mount now.
+  if (document.getElementById("root").classList.contains("visible")) window.__mountApp();
 })();
 </script>
 </body>
